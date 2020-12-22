@@ -7,6 +7,7 @@ const db = require("./config/db");
 const path = "/gss/api";
 const users = require("./controllers/user");
 const login = require("./controllers/user_login");
+const validate = require("./controllers/validate_user");
 
 db.connect((err) => {
     if (err) throw err;
@@ -18,6 +19,7 @@ app.use(helmet());
 
 app.use(path + "/users", users);
 app.use(path + "/login", login);
+app.use(path + "/validate", validate);
 
 app.get(path + "/", function (req, res) {
     res.send("Hello!");

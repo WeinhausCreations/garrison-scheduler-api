@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const { json } = require("body-parser");
 
 router.post("/register", (req, res) => {
     const login = req.body;
@@ -39,47 +40,39 @@ router.post("/update", (req, res) => {
     );
 });
 
+// router.post("/password/overwrite", (req, res) => {
+//     const login = req.body;
+//     const newPassword = bcrypt.hashSync(login.newPassword, 10);
+//     db.query("UPDATE user_login SET password = ? WHERE user_id = ?", [newPassword, login.userId], (err, rows, fields) => {
+//         if(err) throw err;
+//         res.status(200).json(rows);
+//     })
+// })
+
 router.post("/update/password", (req, res) => {
     const login = req.body;
-    bcrypt.hash(login.oldPassword, 10, (b_err, hash) => {
-        if (b_err) throw err;
-        login.oldPassword = hash;
-        db.query(
-            "SELECT password FROM user_login WHERE user_id = ?",
-            [login.userId],
-            (err, rows, fields) => {
-                if (err) throw err;
-                bcrypt.compare(
-                    login.oldPassword,
-                    rows[0].password,
-                    (b_err, b_res) => {
-                        if (b_res) {
-                            bcrypt.hash(
-                                login.newPassword,
-                                10,
-                                (b_err, hash) => {
-                                    if (b_err) throw b_err;
-                                    login.newPassword = hash;
-                                    db.query(
-                                        "UPDATE user_login SET password = ? WHERE user_id = ?",
-                                        [login.newPassword, login.userId],
-                                        (err, rows, fields) => {
-                                            if (err) throw err;
-                                            res.status(200).json({
-                                                status: "success",
-                                                message:
-                                                    "Password update complete.",
-                                            });
-                                        }
-                                    );
-                                }
-                            );
-                        }
-                    }
-                );
+    db.query(
+        "SELECT password FROM user_login WHERE user_id = ?",
+        [login.userId],
+        (err, rows, fields) => {
+            if (err) throw err;
+            if(bcrypt.compareSync(login.oldPassword, rows[0].password)){
+                const newPassword = bcrypt.hashSync(login.newPassword, 10);
+                db.query("UPDATE user_login SET password = ? WHERE user_id = ?", [newPassword, login.userId], (err, rows, fields) => {
+                    if (err) throw err;
+                    res.status(200).json({
+                        status: "success",
+                        message: "Password updated."
+                    });
+                })
+            } else {
+                res.status(404).json({
+                    status: "failed",
+                    message: "Password mismatch.",
+                });
             }
-        );
-    });
+        }
+    );
 });
 
 module.exports = router;
