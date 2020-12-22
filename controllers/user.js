@@ -33,7 +33,7 @@ router.post("/", (req, res) => {
     );
 });
 
-router.get("/:id", (req, res) => {
+router.get("/user/:id", (req, res) => {
     db.query(
         "SELECT * FROM user WHERE id = ?",
         [req.params.id],
@@ -44,7 +44,7 @@ router.get("/:id", (req, res) => {
     );
 });
 
-router.post("/:id", (req, res) => {
+router.post("/user/:id", (req, res) => {
     const user = req.body;
     db.query(
         "UPDATE user SET dodin = ?, first_name = ?, last_name = ?, association_id = ?, email = ?, phone = ?, unit = ?, archived = ?, updated = NOW(), updated_user = ? WHERE id = ?",
@@ -70,7 +70,7 @@ router.post("/:id", (req, res) => {
     );
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/user/:id", (req, res) => {
     db.query(
         "DELETE FROM user WHERE id = ?",
         [req.params.id],
@@ -85,15 +85,42 @@ router.delete("/:id", (req, res) => {
 });
 
 router.get("/search", (req, res) => {
-    let str = "%" + decodeURIComponent(req.query.query) + "%";
-    db.query(
-        "SELECT * FROM user WHERE dodin LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ? OR unit LIKE ?",
-        [str, str, str, str, str, str],
-        (err, rows, fields) => {
-            if (err) throw err;
-            res.status(200).json(rows);
-        }
-    );
+    if (req.query) {
+        !req.query.firstName ? req.query.firstName = "%" : req.query.firstName = "%" + req.query.firstName + "%";
+        !req.query.lastName ? req.query.lastName = "%" : req.query.lastName = "%" + req.query.lastName + "%";
+        !req.query.dodin ? req.query.dodin = "%" : req.query.dodin = "%" + req.query.dodin + "%";
+        !req.query.phone ? req.query.phone = "%" : req.query.phone = "%" + req.query.phone + "%";
+        !req.query.email ? req.query.email = "%" : req.query.email = "%" + req.query.email + "%";
+        console.log(req.query);
+        db.query(
+            "SELECT * FROM user WHERE first_name LIKE ? AND last_name LIKE ? AND dodin LIKE ? AND phone LIKE ? AND email LIKE ?",
+            [
+                req.query.firstName,
+                req.query.lastName,
+                req.query.dodin,
+                req.query.phone,
+                req.query.email,
+            ],
+            (err, rows, fields) => {
+                if (err) throw err;
+                res.status(200).json(rows);
+            }
+        );
+    } else {
+        res.status(404).json({
+            status: "bad request",
+            message: "input search parameters",
+        });
+    }
 });
+
+router.get("/check", (req, res) => {
+    db.query(
+        "SELECT COUNT(*) AS emailCount FROM user WHERE email = ?", [req.query.email], (err, rows, fields) => {
+            if (err) throw err
+            res.status(200).json(rows[0].emailCount);
+        }
+    )
+})
 
 module.exports = router;
