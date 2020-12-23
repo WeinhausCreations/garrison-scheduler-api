@@ -1,41 +1,40 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcrypt");
 const db = require("../config/db");
-const uid = require("uid-safe");
 
-router.post("/", (req, res) => {
-    const login = req.body;
+router.get("/", (req, res) => {
+    const sessionKey = req.body.sessionKey;
     db.query(
-        "SELECT * FROM user_login WHERE username = ?",
-        [login.username],
+        "SELECT user_id, expiration FROM user_session WHERE session_key = ? AND logout = NULL",
+        [sessionKey],
         (err, rows, fields) => {
             if (err) throw err;
-            if (bcrypt.compareSync(login.password, rows[0].password)) {
-                const sessionKey = uid.sync(18);
-                if (login.remember === true) {
-                    res.cookie("userSession", sessionKey, {
-                        expires: new Date(2 * 24 * 60 * 60 * 60 + Date.now()),
-                        httpOnly: true,
-                        secure: true,
+            if (rows.length > 0) {
+                if (rows[0].expiration < new Date()) {
+                    db.query(
+                        "UPDATE user_session SET session_key = NULL, logout = NOW() WHERE session_key = ?",
+                        [sessionKey],
+                        (err, rows, fields) => {
+                            if (err) throw err;
+                            res.status(401).json({
+                                status: "failed",
+                                message:
+                                    "Session is expired. Please login again.",
+                            });
+                        }
+                    );
+                } else {
+                    res.status(200).json({
+                        status: "success",
+                        message: "User session verified.",
+                        expiration: rows[0].expiration,
                     });
                 }
-                db.query(
-                    "INSERT INTO user_session (user_id, session_key, login, expiration) VALUES (?, ?, NOW(), NOW() + INTERVAL 2 DAY)",
-                    [rows[0].user_id, sessionKey],
-                    (err, rows, fields) => {
-                        if (err) throw err;
-                        res.status(200).json({
-                            status: "success",
-                            message: "user login verified, session created",
-                            userSession: sessionKey,
-                        });
-                    }
-                );
             } else {
-                res.status(404).json({
+                res.status(400).json({
                     status: "failed",
-                    message: "user login verification failed.",
+                    message:
+                        "User session does not exist. Please log in again.",
                 });
             }
         }

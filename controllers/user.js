@@ -24,7 +24,7 @@ router.post("/", (req, res) => {
             user.email,
             user.phone,
             user.unit,
-            user.updatedUser,
+            user.updatedUserId,
         ],
         (err, rows, fields) => {
             if (err) throw err;
@@ -57,7 +57,7 @@ router.post("/user/:id", (req, res) => {
             user.phone,
             user.unit,
             user.archived,
-            user.updatedUser,
+            user.updatedUserId,
             user.id,
         ],
         (err, rows, fields) => {
@@ -107,7 +107,7 @@ router.get("/search", (req, res) => {
             }
         );
     } else {
-        res.status(404).json({
+        res.status(400).json({
             status: "bad request",
             message: "input search parameters",
         });
