@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const bcrypt = require("bcrypt");
 const uid = require("uid-safe");
 
 router.post("/register", (req, res) => {
@@ -11,12 +11,7 @@ router.post("/register", (req, res) => {
         login.password = hash;
         db.query(
             "INSERT INTO user_login (user_id, username, password, updated, archived, updated_user) VALUES (?, ?, ?, NOW(), 0, ?)",
-            [
-                login.userId,
-                login.username,
-                login.password,
-                login.updatedUserId,
-            ],
+            [login.userId, login.username, login.password, login.updatedUserId],
             (err, rows, fields) => {
                 if (err) throw err;
                 res.status(200).json(rows.insertId);
@@ -56,15 +51,19 @@ router.patch("/update/password", (req, res) => {
         [login.userId],
         (err, rows, fields) => {
             if (err) throw err;
-            if(bcrypt.compareSync(login.oldPassword, rows[0].password)){
+            if (bcrypt.compareSync(login.oldPassword, rows[0].password)) {
                 const newPassword = bcrypt.hashSync(login.newPassword, 10);
-                db.query("UPDATE user_login SET password = ? WHERE user_id = ?", [newPassword, login.userId], (err, rows, fields) => {
-                    if (err) throw err;
-                    res.status(200).json({
-                        status: "success",
-                        message: "Password updated."
-                    });
-                })
+                db.query(
+                    "UPDATE user_login SET password = ? WHERE user_id = ?",
+                    [newPassword, login.userId],
+                    (err, rows, fields) => {
+                        if (err) throw err;
+                        res.status(200).json({
+                            status: "success",
+                            message: "Password updated.",
+                        });
+                    }
+                );
             } else {
                 res.status(404).json({
                     status: "failed",
@@ -84,23 +83,49 @@ router.post("/", (req, res) => {
             if (err) throw err;
             if (bcrypt.compareSync(login.password, rows[0].password)) {
                 const sessionKey = uid.sync(18);
-                if (login.remember === true) {
-                    res.cookie("userSession", sessionKey, {
-                        expires: new Date(2 * 24 * 60 * 60 * 60 + Date.now()),
-                        httpOnly: true,
-                        secure: true,
-                    });
-                }
+                const userId = rows[0].user_id;
+
                 db.query(
-                    "INSERT INTO user_session (user_id, session_key, login, expiration) VALUES (?, ?, NOW(), NOW() + INTERVAL 2 DAY)",
-                    [rows[0].user_id, sessionKey],
+                    "SELECT COUNT(*) AS membershipCount FROM user_membership WHERE user_id = ?",
+                    [userId],
                     (err, rows, fields) => {
                         if (err) throw err;
-                        res.status(200).json({
-                            status: "success",
-                            message: "user login verified, session created",
-                            userSession: sessionKey,
-                        });
+                        let admin = false;
+                        rows[0].membershipCount > 0
+                            ? (admin = true)
+                            : (admin = false);
+                        db.query(
+                            "INSERT INTO user_session (user_id, session_key, login, expiration) VALUES (?, ?, NOW(), NOW() + INTERVAL 2 DAY)",
+                            [userId, sessionKey],
+                            (err, rows, fields) => {
+                                if (err) throw err;
+                                req.session.user = userId;
+                                req.session.admin = admin;
+                                req.session.key = sessionKey;
+
+                                if (login.remember === true) {
+                                    res.cookie("userSession", sessionKey, {
+                                        expires: new Date(
+                                            2 * 24 * 60 * 60 * 60 + Date.now()
+                                        ),
+                                        // httpOnly: true,
+                                        // secure: true,
+                                    });
+                                    // } else {
+                                    //     res.cookie("userSession", sessionKey, {
+                                    //         // httpOnly: true,
+                                    //         // secure: true,
+                                    //     });
+                                }
+                                res.status(200).json({
+                                    status: 200,
+                                    message:
+                                        "user login verified, session created",
+                                    user: userId,
+                                    admin: admin,
+                                });
+                            }
+                        );
                     }
                 );
             } else {
@@ -111,6 +136,19 @@ router.post("/", (req, res) => {
             }
         }
     );
+});
+
+router.get("/check", (req, res) => {
+    if (req.query.username) {
+        db.query(
+            "SELECT COUNT(*) AS usernameCount FROM user_login WHERE username = ?",
+            [req.query.username],
+            (err, rows, fields) => {
+                if (err) throw err;
+                res.status(200).json(rows[0].usernameCount);
+            }
+        );
+    }
 });
 
 module.exports = router;
