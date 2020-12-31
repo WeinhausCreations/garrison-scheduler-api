@@ -4,7 +4,9 @@ const db = require("../config/db");
 
 router.get("/", (req, res) => {
     if (req.session.user && req.session.key) {
-        res.status(200);
+        res.status(200).json({
+            message: "User verified",
+        });
     } else if (req.cookies.userSession) {
         res.status(400).json({
             status: 400,
