@@ -55,7 +55,7 @@ router.post("/self", (req, res) => {
                                     "Welcome to Garrison Scheduler - Please Verify Your Email",
                                 html: `<h2>Thank You for Registering</h2>
                                         <p>Your account has been created in the Garrison Scheduler System. The next step is to verify your email. Please click the link below to verify your email and activate your account.</p>
-                                        <p><a href="https://dev.weinhauscreations.com/gss/verify?code=${code}">Verify Your Email</a></p>
+                                        <p><a href="https://garrisonscheduler.com/verify?code=${code}">Verify Your Email</a></p>
                                         <p>After you verify your account you'll have access to the scheduling system. Please ensure that you bring your ID to your first visit so that it can be verified by staff.</p>
                                         <p>Very respectfully,</p>
                                         <p>Garrison Scheduler Team</p>`,
@@ -77,6 +77,7 @@ router.post("/self", (req, res) => {
                                     throw err;
                                 }
                                 res.status(200).json({
+                                    status: 200,
                                     message:
                                         "Account created. Please verify your email.",
                                 });
