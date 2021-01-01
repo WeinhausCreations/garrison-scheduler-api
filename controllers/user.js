@@ -24,7 +24,7 @@ router.post("/", (req, res) => {
             user.email,
             user.phone,
             user.unit,
-            user.updatedUser,
+            user.updatedUserId,
         ],
         (err, rows, fields) => {
             if (err) throw err;
@@ -57,7 +57,7 @@ router.post("/user/:id", (req, res) => {
             user.phone,
             user.unit,
             user.archived,
-            user.updatedUser,
+            user.updatedUserId,
             user.id,
         ],
         (err, rows, fields) => {
@@ -86,11 +86,21 @@ router.delete("/user/:id", (req, res) => {
 
 router.get("/search", (req, res) => {
     if (req.query) {
-        !req.query.firstName ? req.query.firstName = "%" : req.query.firstName = "%" + req.query.firstName + "%";
-        !req.query.lastName ? req.query.lastName = "%" : req.query.lastName = "%" + req.query.lastName + "%";
-        !req.query.dodin ? req.query.dodin = "%" : req.query.dodin = "%" + req.query.dodin + "%";
-        !req.query.phone ? req.query.phone = "%" : req.query.phone = "%" + req.query.phone + "%";
-        !req.query.email ? req.query.email = "%" : req.query.email = "%" + req.query.email + "%";
+        !req.query.firstName
+            ? (req.query.firstName = "%")
+            : (req.query.firstName = "%" + req.query.firstName + "%");
+        !req.query.lastName
+            ? (req.query.lastName = "%")
+            : (req.query.lastName = "%" + req.query.lastName + "%");
+        !req.query.dodin
+            ? (req.query.dodin = "%")
+            : (req.query.dodin = "%" + req.query.dodin + "%");
+        !req.query.phone
+            ? (req.query.phone = "%")
+            : (req.query.phone = "%" + req.query.phone + "%");
+        !req.query.email
+            ? (req.query.email = "%")
+            : (req.query.email = "%" + req.query.email + "%");
         console.log(req.query);
         db.query(
             "SELECT * FROM user WHERE first_name LIKE ? AND last_name LIKE ? AND dodin LIKE ? AND phone LIKE ? AND email LIKE ?",
@@ -107,7 +117,7 @@ router.get("/search", (req, res) => {
             }
         );
     } else {
-        res.status(404).json({
+        res.status(400).json({
             status: "bad request",
             message: "input search parameters",
         });
@@ -115,12 +125,25 @@ router.get("/search", (req, res) => {
 });
 
 router.get("/check", (req, res) => {
-    db.query(
-        "SELECT COUNT(*) AS emailCount FROM user WHERE email = ?", [req.query.email], (err, rows, fields) => {
-            if (err) throw err
-            res.status(200).json(rows[0].emailCount);
-        }
-    )
-})
+    if (req.query.email) {
+        db.query(
+            "SELECT COUNT(*) AS emailCount FROM user WHERE email = ?",
+            [req.query.email],
+            (err, rows, fields) => {
+                if (err) throw err;
+                res.status(200).json(rows[0].emailCount);
+            }
+        );
+    } else if (req.query.dodin) {
+        db.query(
+            "SELECT COUNT(*) AS dodinCount FROM user WHERE dodin = ?",
+            [req.query.dodin],
+            (err, rows, fields) => {
+                if (err) throw err;
+                res.status(200).json(rows[0].dodinCount);
+            }
+        );
+    }
+});
 
 module.exports = router;
