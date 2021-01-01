@@ -53,6 +53,7 @@ router.post("/update/password", (req, res) => {
                     login.oldPassword,
                     rows[0].password,
                     (b_err, b_res) => {
+                        if (b_err) throw b_err;
                         if (b_res) {
                             bcrypt.hash(
                                 login.newPassword,
