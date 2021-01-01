@@ -60,7 +60,7 @@ app.get(path + "/checksession", (req, res) => {
     res.send(sessionData.user.id + "/" + sessionData.user.admin);
 });
 
-const server = app.listen(3500, () =>
+const server = app.listen(0, () =>
     console.log(
         "Application is listening at http://localhost:",
         server.address().port
