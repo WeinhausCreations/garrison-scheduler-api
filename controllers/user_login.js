@@ -99,29 +99,26 @@ router.post("/", (req, res) => {
                             [userId, sessionKey],
                             (err, rows, fields) => {
                                 if (err) throw err;
-                                req.session.user = userId;
-                                req.session.admin = admin;
-                                req.session.key = sessionKey;
+                                let sessionData = req.session;
+                                sessionData.user = {};
+                                sessionData.user.id = userId;
+                                sessionData.user.admin = admin;
+                                sessionData.user.key = sessionKey;
+                                sessionData.user.username = login.username;
 
                                 if (login.remember === true) {
-                                    res.cookie("userSession", sessionKey, {
+                                    sessionData.cookie = {
                                         expires: new Date(
                                             2 * 24 * 60 * 60 * 60 + Date.now()
                                         ),
-                                        // httpOnly: true,
-                                        // secure: true,
-                                    });
-                                    // } else {
-                                    //     res.cookie("userSession", sessionKey, {
-                                    //         // httpOnly: true,
-                                    //         // secure: true,
-                                    //     });
+                                        // secure: true
+                                    };
                                 }
                                 res.status(200).json({
                                     status: 200,
                                     message:
                                         "user login verified, session created",
-                                    user: userId,
+                                    userId: userId,
                                     admin: admin,
                                 });
                             }

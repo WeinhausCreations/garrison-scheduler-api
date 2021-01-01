@@ -26,7 +26,7 @@ app.use(
     session({ secret: "SemperSupra!", resave: true, saveUninitialized: true })
 );
 
-// var whitelist = ["https://*.garrisonscheduler.com", "http://localhost:3000", "http://192.168.1.13:5555"];
+// var whitelist = ["https://*.garrisonscheduler.com", "http://localhost:3000"];
 // var corsOptions = {
 //     origin: function (origin, callback) {
 //         if (whitelist.indexOf(origin) !== -1) {
@@ -55,12 +55,9 @@ app.get(path + "/search", (req, res) => {
     res.send("test");
 });
 
-app.get(path + "/checkcookie", (req, res) => {
-    res.send(req.cookies.userSession);
-});
-
 app.get(path + "/checksession", (req, res) => {
-    res.send(req.session.user + "/" + req.session.admin);
+    let sessionData = req.session
+    res.send(sessionData.user.id + "/" + sessionData.user.admin);
 });
 
 const server = app.listen(3500, () =>
