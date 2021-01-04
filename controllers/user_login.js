@@ -86,14 +86,20 @@ router.post("/", (req, res) => {
                 const userId = rows[0].user_id;
 
                 db.query(
-                    "SELECT COUNT(*) AS membershipCount FROM user_membership WHERE user_id = ?",
+                    "SELECT * FROM user_membership WHERE user_id = ?",
                     [userId],
                     (err, rows, fields) => {
                         if (err) throw err;
                         let admin = false;
-                        rows[0].membershipCount > 0
-                            ? (admin = true)
-                            : (admin = false);
+                        let adminServices = [];
+                        if (rows.length > 0) {
+                            admin = true;
+                            for (let i = 0; i < rows.length; i++) {
+                                adminServices.push(rows[i].service_id);
+                            }
+                        } else {
+                            admin = false;
+                        }
                         db.query(
                             "INSERT INTO user_session (user_id, session_key, login, expiration) VALUES (?, ?, NOW(), NOW() + INTERVAL 2 DAY)",
                             [userId, sessionKey],
@@ -101,10 +107,12 @@ router.post("/", (req, res) => {
                                 if (err) throw err;
                                 let sessionData = req.session;
                                 sessionData.user = {};
+                                sessionData.admin = {};
                                 sessionData.user.id = userId;
                                 sessionData.user.admin = admin;
                                 sessionData.user.key = sessionKey;
                                 sessionData.user.username = login.username;
+                                sessionData.admin.services = adminServices;
 
                                 if (login.remember === true) {
                                     sessionData.cookie = {
