@@ -32,7 +32,16 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(helmet());
 app.use(
-    session({ secret: "SemperSupra!", resave: true, saveUninitialized: true })
+    session({
+        secret: "SemperSupra!",
+        resave: true,
+        saveUninitialized: true,
+        cookie: {
+            // secure: true,
+            httpOnly: true,
+            // sameSite: 'none',
+        },
+    })
 );
 
 // var whitelist = ["https://*.garrisonscheduler.com", "http://localhost:3000"];
@@ -81,8 +90,7 @@ io.on("connection", (socket) => {
             "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
             (err, rows, fields) => {
                 if (err) throw err;
-                for (let i = 0; i < rows.length; i++)
-                    reservations.push(rows[i]);
+                reservations = rows;
                 io.emit("reservations update", reservations);
             }
         );
@@ -97,81 +105,17 @@ io.on("connection", (socket) => {
         io.emit("Users Connected", userCount);
     });
 
-    socket.on("reservation create", (data, cb) => {
+    socket.on("reservations changed", (data, cb) => {
+        console.log("data:" + data)
         db.query(
-            "INSERT INTO reservation (user_id, service_id, section_id, status_id, is_group, group_name, start, stop, checked_in, checked_out, created, cancelled, archived, updated, updated_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), ?)",
-            [
-                data.userId,
-                data.serviceId,
-                data.sectionId,
-                data.statusId,
-                data.isGroup,
-                data.groupName,
-                data.start,
-                data.stop,
-                data.checkedIn,
-                data.checkedOut,
-                data.created,
-                data.cancelled,
-                data.updatedUserId,
-            ],
+            "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
             (err, rows, fields) => {
                 if (err) throw err;
-                const insertId = rows.insertId;
-                db.query(
-                    "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE id = ?",
-                    [insertId],
-                    (err, rows, fields) => {
-                        if (err) throw err;
-                        reservations.push(rows[0]);
-                        io.emit("reservations update", reservations);
-                        cb({
-                            status: "complete",
-                        });
-                    }
-                );
-            }
-        );
-    });
-
-    socket.on("reservation patch", (data, cb) => {
-        db.query(
-            "UPDATE reservation SET user_id = ?, service_id = ?, section_id = ?, status_id = ?, is_group = ?, group_name = ?, start = ?, stop = ?, checked_in = ?, checked_out = ?, created = ?, cancelled = ?, archived = ?, updated = NOW(), updated_user = ? WHERE id = ?",
-            [
-                data.userId,
-                data.serviceId,
-                data.sectionId,
-                data.statusId,
-                data.isGroup,
-                data.groupName,
-                data.start,
-                data.stop,
-                data.checkedIn,
-                data.checkedOut,
-                data.created,
-                data.cancelled,
-                data.archived,
-                data.updatedUserId,
-                data.id,
-            ],
-            (err, rows, fields) => {
-                if (err) throw err;
-                db.query(
-                    "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE id = ?",
-                    [data.id],
-                    (err, rows, fields) => {
-                        if (err) throw err;
-                        const index = reservations.findIndex(
-                            (element) => element.id === data.id
-                        );
-                        if (index > -1) reservations.splice(index, 1);
-                        reservations.push(rows[0]);
-                        io.emit("reservations update", reservations);
-                        cb({
-                            status: "complete",
-                        });
-                    }
-                );
+                reservations = rows;
+                io.emit("reservations update", reservations);
+                cb({
+                    status: "success",
+                });
             }
         );
     });

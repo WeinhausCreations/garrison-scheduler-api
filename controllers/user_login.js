@@ -122,6 +122,7 @@ router.post("/", (req, res) => {
                                         // secure: true
                                     };
                                 }
+                                console.log(sessionData)
                                 res.status(200).json({
                                     status: 200,
                                     message:
