@@ -72,53 +72,53 @@ app.use(path + "/dashboard", dashboard);
 
 //socket.io setup
 const server = http.createServer(app);
-const io = socketIo(server);
+// const io = socketIo(server);
 
-//global variables
-let userCount = 0;
-let reservations = [];
-let initConnect = true;
+// //global variables
+// let userCount = 0;
+// let reservations = [];
+// let initConnect = true;
 
-//socket.io implementation
-io.on("connection", (socket) => {
-    userCount++;
-    console.log("Users connected: " + userCount);
-    io.emit("Users Connected", userCount);
+// //socket.io implementation
+// io.on("connection", (socket) => {
+//     userCount++;
+//     console.log("Users connected: " + userCount);
+//     io.emit("Users Connected", userCount);
 
-    if (initConnect) {
-        db.query(
-            "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
-            (err, rows, fields) => {
-                if (err) throw err;
-                reservations = rows;
-                io.emit("reservations update", reservations);
-            }
-        );
-        initConnect = false;
-    } else {
-        socket.emit("reservations update", reservations);
-    }
+//     if (initConnect) {
+//         db.query(
+//             "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
+//             (err, rows, fields) => {
+//                 if (err) throw err;
+//                 reservations = rows;
+//                 io.emit("reservations update", reservations);
+//             }
+//         );
+//         initConnect = false;
+//     } else {
+//         socket.emit("reservations update", reservations);
+//     }
 
-    socket.on("disconnect", () => {
-        userCount--;
-        console.log("Users connected: " + userCount);
-        io.emit("Users Connected", userCount);
-    });
+//     socket.on("disconnect", () => {
+//         userCount--;
+//         console.log("Users connected: " + userCount);
+//         io.emit("Users Connected", userCount);
+//     });
 
-    socket.on("reservations changed", (data, cb) => {
-        console.log("data:" + data)
-        db.query(
-            "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
-            (err, rows, fields) => {
-                if (err) throw err;
-                reservations = rows;
-                io.emit("reservations update", reservations);
-                cb({
-                    status: "success",
-                });
-            }
-        );
-    });
-});
+//     socket.on("reservations changed", (data, cb) => {
+//         console.log("data:" + data)
+//         db.query(
+//             "SELECT reservation.*, user.first_name, user.last_name, reservation_status.status FROM reservation LEFT JOIN user ON reservation.user_id = user.id LEFT JOIN reservation_status ON reservation.status_id = reservation_status.id WHERE reservation.archived = 0 AND reservation.checked_out IS NULL AND reservation.cancelled = 0",
+//             (err, rows, fields) => {
+//                 if (err) throw err;
+//                 reservations = rows;
+//                 io.emit("reservations update", reservations);
+//                 cb({
+//                     status: "success",
+//                 });
+//             }
+//         );
+//     });
+// });
 
 server.listen(port, () => console.log(`App listening on port ${port}`));
