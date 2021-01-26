@@ -37,9 +37,9 @@ app.use(
         resave: true,
         saveUninitialized: true,
         cookie: {
-            // secure: true,
+            secure: true,
             httpOnly: true,
-            // sameSite: 'none',
+            sameSite: "lax",
         },
     })
 );
@@ -55,7 +55,12 @@ app.use(
 //     },
 // };
 // app.use(cors(corsOptions));
-app.use(cors());
+app.use(
+    cors({
+        credentials: true,
+        exposedHeaders: ["set-cookie"],
+    })
+);
 
 //controllers
 app.use(path, index);
