@@ -28,6 +28,7 @@
     "mysql": "^2.18.1",
     "nodemailer": "^6.4.17",
     "socket.io": "^3.0.4",
-    "uid-safe": "^2.1.5"
+    "uid-safe": "^2.1.5",
+    "x-xss-protection": "^2.0.0"
   }
 }
